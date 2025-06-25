@@ -1,0 +1,14 @@
+{
+  "name": "transnotion",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "translate-notion.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "node translate-notion.js",
+    "deploy": "vercel deploy"
+  },
+  "dependencies": {
+    "@notionhq/client": "^3.1.3"
+  }
+}
