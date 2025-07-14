@@ -24,6 +24,10 @@ export default async function handler(req, res) {
         // 查詢 Notion 資料庫
         const response = await notion.databases.query({
             database_id: NOTION_DATABASE_ID,
+            filter: {
+                property: "product",
+                select: { equals: "Portal" }
+            }
         });
 
         // 轉換語系資料
