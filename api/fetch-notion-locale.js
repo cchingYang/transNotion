@@ -8,9 +8,9 @@ const notion = new Client({ auth: NOTION_TOKEN });
 
 
 const langMap = {
-    "zh-TW": "l10n-zh-tw",
-    "en-US": "manual-en-US",
-    "ja-JP": "manual-ja-JP"
+    "zh-TW": "zh-TW",
+    "en-US": "en-US",
+    "ja-JP": "ja-JP"
 };
 
 export default async function handler(req, res) {

@@ -37,12 +37,12 @@ export default async function handler(req, res) {
 
         for (const page of pages) {
             const props = page.properties;
-            const zh = props["l10n-zh-tw"]?.rich_text?.[0]?.text?.content || "";
+            const zh = props["zh-tw"]?.rich_text?.[0]?.text?.content || "";
 
             if (!zh) continue;
 
-            const en = props["manual-en-US"]?.rich_text?.[0]?.text?.content;
-            const ja = props["manual-ja-JP"]?.rich_text?.[0]?.text?.content;
+            const en = props["en-US"]?.rich_text?.[0]?.text?.content;
+            const ja = props["ja-JP"]?.rich_text?.[0]?.text?.content;
 
             if (en && ja) continue;
 
@@ -52,10 +52,10 @@ export default async function handler(req, res) {
             await notion.pages.update({
                 page_id: page.id,
                 properties: {
-                    "manual-en-US": {
+                    "en-US": {
                         rich_text: [{ text: { content: enTranslated } }],
                     },
-                    "manual-ja-JP": {
+                    "ja-JP": {
                         rich_text: [{ text: { content: jaTranslated } }],
                     },
                 },
