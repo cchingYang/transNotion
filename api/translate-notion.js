@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
         for (const page of pages) {
             const props = page.properties;
-            const zh = props["zh-tw"]?.rich_text?.[0]?.text?.content || "";
+            const zh = props["zh-TW"]?.rich_text?.[0]?.text?.content || "";
 
             if (!zh) continue;
 
