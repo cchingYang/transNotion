@@ -12,6 +12,25 @@ const langMap = {
     "en-US": "en-US",
     "ja-JP": "ja-JP"
 };
+//解決notion一次只能拉100筆資料的問題
+async function fetchAllPages(databaseId) {
+    let results = [];
+    let hasMore = true;
+    let startCursor = undefined;
+
+    while (hasMore) {
+        const response = await notion.databases.query({
+            database_id: databaseId,
+            start_cursor: startCursor,
+        });
+
+        results = results.concat(response.results);
+        hasMore = response.has_more;
+        startCursor = response.next_cursor;
+    }
+
+    return results;
+}
 
 export default async function handler(req, res) {
     const locales = {
@@ -22,12 +41,10 @@ export default async function handler(req, res) {
 
     try {
         // 查詢 Notion 資料庫
-        const response = await notion.databases.query({
-            database_id: NOTION_DATABASE_ID,
-        });
+        const pages = await fetchAllPages(NOTION_DATABASE_ID);
 
         // 轉換語系資料
-        for (const page of response.results) {
+        for (const page of pages) {
             const key = page.properties["message key"]?.rich_text?.[0]?.text?.content?.trim();
             if (!key) continue;
 
