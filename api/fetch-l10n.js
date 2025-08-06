@@ -83,12 +83,13 @@ export default async function handler(req, res) {
         for (const page of pages) {
             const props = page.properties;
             const messageKey = props["message key"]?.rich_text?.[0]?.text?.content;
-            const currentZh = props["zh-TW"]?.rich_text?.[0]?.text?.content || '';
 
             if (!messageKey) continue;
 
             const newZh = zhTWMap[messageKey];
-            if (newZh && !currentZh) {
+
+            // ✅ 強制覆蓋 zh-TW 欄位，不管原本有沒有值，以l10n為主
+            if (newZh) {
                 await notion.pages.update({
                     page_id: page.id,
                     properties: {
