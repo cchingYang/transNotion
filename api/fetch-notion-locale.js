@@ -31,6 +31,13 @@ async function fetchAllPages(databaseId) {
 
     return results;
 }
+// 🆕 取得 Notion 資料庫名稱
+async function fetchDatabaseName(databaseId) {
+    const db = await notion.databases.retrieve({ database_id: databaseId });
+    const titleObj = db.title?.[0];
+    const resultTitle = titleObj?.text?.content || "project";
+    return resultTitle;
+}
 
 export default async function handler(req, res) {
     const locales = {
@@ -40,6 +47,11 @@ export default async function handler(req, res) {
     };
 
     try {
+        // 取得資料庫名稱當作專案名
+        const projectNameRaw = await fetchDatabaseName(NOTION_DATABASE_ID);
+        const projectName = projectNameRaw.replace(/[^a-zA-Z0-9-_]/g, '_'); // 避免特殊字元
+        const zipFilename = `${projectName}_locales.zip`;
+
         // 查詢 Notion 資料庫
         const pages = await fetchAllPages(NOTION_DATABASE_ID);
 
@@ -65,7 +77,7 @@ export default async function handler(req, res) {
 
         // 設定 response header
         res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', 'attachment; filename="locales.zip"');
+        res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`);
         res.status(200).send(zipData);
 
     } catch (err) {
