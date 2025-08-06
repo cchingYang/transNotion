@@ -8,7 +8,7 @@ const notion = new Client({ auth: NOTION_TOKEN });
 
 const ALL_LANG_URL = 'https://l10n-ap-southeast-1.s3.ap-southeast-1.amazonaws.com/goface/stu/all_lang.json';
 
-// 下載並解析 all_lang.json
+// 下載並解析 all_lang.json 中的 "zh-TW"
 async function fetchAllLangData() {
     return new Promise((resolve, reject) => {
         https.get(ALL_LANG_URL, (res) => {
@@ -28,7 +28,7 @@ async function fetchAllLangData() {
     });
 }
 
-// 解決 Notion 一次最多拉 100 筆資料的問題
+// 拉出 Notion 所有資料（支援分頁）
 async function fetchAllPages(databaseId) {
     let results = [];
     let hasMore = true;
@@ -50,20 +50,44 @@ async function fetchAllPages(databaseId) {
 
 export default async function handler(req, res) {
     try {
-        const zhTWMap = await fetchAllLangData(); // { messageKey1: "中文", messageKey2: "中文"... }
+        const zhTWMap = await fetchAllLangData(); // { key1: "中文", key2: "中文" }
 
         const pages = await fetchAllPages(NOTION_DATABASE_ID);
+        const existingKeys = new Set(
+            pages.map(page => page.properties["message key"]?.rich_text?.[0]?.text?.content)
+                .filter(Boolean)
+        );
+
+        let newCount = 0;
         let updatedCount = 0;
 
+        // 先補進 Notion 中缺少的 key
+        for (const [key, zhValue] of Object.entries(zhTWMap)) {
+            if (!existingKeys.has(key)) {
+                await notion.pages.create({
+                    parent: { database_id: NOTION_DATABASE_ID },
+                    properties: {
+                        "message key": {
+                            rich_text: [{ text: { content: key } }],
+                        },
+                        "zh-TW": {
+                            rich_text: [{ text: { content: zhValue } }],
+                        },
+                    },
+                });
+                newCount++;
+            }
+        }
+
+        // 再補齊原有頁面中缺漏的 zh-TW 欄位
         for (const page of pages) {
             const props = page.properties;
             const messageKey = props["message key"]?.rich_text?.[0]?.text?.content;
             const currentZh = props["zh-TW"]?.rich_text?.[0]?.text?.content || '';
 
-            if (!messageKey) continue; // 無 message key 的資料跳過
-            const newZh = zhTWMap[messageKey];
+            if (!messageKey) continue;
 
-            // 如果有新 zh-TW 資料且目前欄位是空的，就寫入
+            const newZh = zhTWMap[messageKey];
             if (newZh && !currentZh) {
                 await notion.pages.update({
                     page_id: page.id,
@@ -77,7 +101,11 @@ export default async function handler(req, res) {
             }
         }
 
-        res.status(200).json({ message: `✅ 更新完成，補入 zh-TW 共 ${updatedCount} 筆` });
+        res.status(200).json({
+            message: `✅ Notion 資料庫同步完成`,
+            added: newCount,
+            updated: updatedCount,
+        });
     } catch (error) {
         console.error("❌ 發生錯誤:", error);
         res.status(500).json({ error: '伺服器錯誤', detail: error.message });
